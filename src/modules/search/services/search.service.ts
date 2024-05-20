@@ -7,6 +7,7 @@ import { PageParserService } from './page-parser.service';
 
 @Injectable()
 export class SearchService {
+  //readlock
   private readonly inProgressRequests = new Map<string, Promise<any>>();
 
   constructor(
