@@ -4,7 +4,7 @@ import { SearchDto } from './dto/search.dto';
 import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 
 @Controller('search')
-@UseInterceptors(CacheInterceptor)
+// @UseInterceptors(CacheInterceptor)
 export class SearchController {
   constructor(private readonly searchService: SearchService) {}
 

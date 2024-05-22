@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { GoogleEngine } from '../engines/google.engine';
-import { GoogleSearchResult } from '../types/result.type';
+import { GoogleEngine } from '../engines/google/google.engine';
+import { SearchItem } from '../types/result.type';
 import { delay } from '../../../utils';
 import { SearchEngines } from '../types/engine.type';
 import { PageParserService } from './page-parser.service';
@@ -36,19 +36,19 @@ export class SearchService {
 
     const searchPromise = searchEngine
       .search(query)
-      .then(async (searchResult) => {
+      .then(async (searchResult: SearchItem[]) => {
         if (!searchResult) throw new NotFoundException('No information found');
 
         const mainResponse = await this.generateMainResponse(searchResult);
-        let defaultResponse =
-          this.pageParserService.generateDefaultResponse(searchResult);
+
+        let defaultResponse = this.generateDefaultResponse(searchResult);
 
         if (mainResponse)
           defaultResponse = defaultResponse.filter(
-            (item) => item.url !== mainResponse.url,
+            (item) => item.link !== mainResponse.link,
           );
 
-        await delay(5000);
+        await delay(2000);
 
         this.inProgressRequests.delete(requestKey);
 
@@ -74,24 +74,28 @@ export class SearchService {
     return null;
   }
 
-  private async generateMainResponse(searchResult: GoogleSearchResult[]) {
+  private async generateMainResponse(searchResult: SearchItem[]) {
     const keyWord = 'wikipedia';
 
-    const mainResult = searchResult.find((item) =>
-      item.displayLink.includes(keyWord),
-    );
+    const mainResult = searchResult.find((item) => item.link.includes(keyWord));
 
     if (!mainResult) return null;
 
-    const pageImage = this.pageParserService.grabMainImage(mainResult);
     const pageContent = await this.pageParserService.grabMainContent(
       mainResult.link,
     );
 
     return {
-      url: mainResult.displayLink,
-      image: pageImage,
-      content: pageContent,
+      link: mainResult.link,
+      image: mainResult.image ?? pageContent.image,
+      content: pageContent.text,
     };
+  }
+
+  private generateDefaultResponse(searchResult: SearchItem[]) {
+    return searchResult.map((result) => ({
+      link: result.link,
+      title: result.title,
+    }));
   }
 }

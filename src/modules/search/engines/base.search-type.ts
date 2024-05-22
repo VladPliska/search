@@ -1,5 +1,10 @@
 import { SearchItem } from '../types/result.type';
 
-export interface BaseEngine {
+export interface BaseSearchType {
   search(phrase: string): Promise<SearchItem[]>;
+}
+
+export enum SearchTypes {
+  API,
+  HTML,
 }

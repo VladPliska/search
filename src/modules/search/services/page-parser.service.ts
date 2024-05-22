@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import axios from 'axios';
-import { GoogleSearchResult } from '../types/result.type';
+import * as cheerio from 'cheerio';
 
 @Injectable()
 export class PageParserService {
-  async grabMainContent(link: string): Promise<string> {
+  async grabMainContent(
+    link: string,
+  ): Promise<{ text: string; image: string }> {
     const page = await axios.get(link);
     const pageContent = page.data;
 
@@ -13,27 +15,35 @@ export class PageParserService {
     const startIndex = pageContent.indexOf(startTag);
     const endIndex = pageContent.indexOf(endTag, startIndex);
 
+    const image = this.getWikiImageFromHtml(pageContent);
+    let text;
+
     if (startIndex !== -1 && endIndex !== -1) {
       const content = pageContent.substring(
         startIndex + startTag.length,
         endIndex,
       );
 
-      return content.trim();
+      text = content.trim();
     }
 
-    return null;
+    return {
+      text,
+      image,
+    };
   }
 
-  grabMainImage(searchResult: GoogleSearchResult): string {
-    const pageMap = searchResult.pagemap;
-    return pageMap?.cse_image?.[0]?.src || pageMap.metatags?.[0]?.['og:image'];
-  }
+  private getWikiImageFromHtml(html: string) {
+    const $ = cheerio.load(html);
 
-  generateDefaultResponse(searchResult: GoogleSearchResult[]) {
-    return searchResult.map((result) => ({
-      url: result.displayLink,
-      title: result.htmlTitle,
-    }));
+    const images = $('#content figure');
+
+    const mainImage = images?.[0];
+
+    if (!mainImage) return null;
+
+    const imageUrl = $(mainImage).find('img').attr('src');
+
+    return `https:${imageUrl}`;
   }
 }

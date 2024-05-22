@@ -14,3 +14,10 @@ export type PageMap = {
     },
   ];
 };
+
+export type SearchItem = {
+  link: string;
+  title: string;
+  htmlTitle: string;
+  image?: string;
+};
